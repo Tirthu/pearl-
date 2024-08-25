@@ -1,0 +1,63 @@
+export class EmailService {
+  private provider1: EmailProvider;
+  private provider2: EmailProvider;
+  private rateLimit: number;
+  private attempts: Map<string, number>;
+
+  constructor(provider1: EmailProvider, provider2: EmailProvider) {
+    this.provider1 = provider1;
+    this.provider2 = provider2;
+    this.rateLimit = 100;
+    this.attempts = new Map();
+  }
+
+  async sendEmail(email: Email): Promise<void> {
+    if (this.attempts.has(email.id)) {
+      console.log(`Email with ID ${email.id} already sent.`);
+      return;
+    }
+
+    let success = false;
+    let attempt = 0;
+
+    while (attempt < 5 && !success) {
+      attempt++;
+      try {
+        await this.provider1.send(email);
+        success = true;
+      } catch (error) {
+        console.log(`Provider1 failed, attempting Provider2`);
+        try {
+          await this.provider2.send(email);
+          success = true;
+        } catch (error) {
+          console.log(`Provider2 failed, retrying...`);
+          await this.exponentialBackoff(attempt);
+        }
+      }
+    }
+
+    if (success) {
+      this.attempts.set(email.id, attempt);
+      console.log(`Email sent successfully after ${attempt} attempts.`);
+    } else {
+      console.log(`Failed to send email after ${attempt} attempts.`);
+    }
+  }
+
+  private async exponentialBackoff(attempt: number): Promise<void> {
+    const delay = Math.pow(2, attempt) * 100;
+    return new Promise(resolve => setTimeout(resolve, delay));
+  }
+}
+
+interface EmailProvider {
+  send(email: Email): Promise<void>;
+}
+
+interface Email {
+  id: string;
+  to: string;
+  subject: string;
+  body: string;
+}

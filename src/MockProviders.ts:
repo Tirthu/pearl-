@@ -1,0 +1,17 @@
+export class MockProvider1 implements EmailProvider {
+  async send(email: Email): Promise<void> {
+    if (Math.random() > 0.7) {
+      throw new Error("Provider1 failed");
+    }
+    console.log(`Provider1 successfully sent email to ${email.to}`);
+  }
+}
+
+export class MockProvider2 implements EmailProvider {
+  async send(email: Email): Promise<void> {
+    if (Math.random() > 0.7) {
+      throw new Error("Provider2 failed");
+    }
+    console.log(`Provider2 successfully sent email to ${email.to}`);
+  }
+}
